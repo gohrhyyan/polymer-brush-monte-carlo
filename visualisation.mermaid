@@ -1,0 +1,54 @@
+flowchart TD
+    %% Main Program Flow
+    Start["Program Start"] --> Init["start_simulation.py\n1. Initialize System"]
+    Init --> Grid["2. Setup Grid"]
+    Grid --> Chain["3. Generate Chains"]
+    Chain --> Loops["4. Start Main Loops\n10 configurations\n3 temperatures\n4 interaction strengths"]
+    Loops --> Monte["5. Run Monte Carlo"]
+    Monte --> Analysis["6. Analyze Results"]
+    Analysis --> End["End"]
+
+    %% System Classes in brush.py
+    subgraph BrushClasses["brush.py: System Classes"]
+        Particle["Class: Particle\nWhat it does: Single monomer\nType A/B\nPosition x,y,z"]
+        PolymerChain["Class: PolymerChain\nWhat it does: Chain of 10 monomers\nGrafting position\nList of particles"]
+        BrushClass["Class: Brush\nWhat it does: Full system\nList of 50 chains"]
+    end
+
+    %% Grid Setup Module
+    subgraph GridSetup["grid_setup.py"]
+        InitGrid["Function: initialize_grid()\nWhat it does:\nCreates 10x10 surface\nPlaces 50 random points\nChecks for overlaps"]
+    end
+
+    %% Chain Generator Module
+    subgraph ChainGen["chain_generator.py"]
+        BlockPoly["Function: create_block_polymer()\nMakes: AAAAA-BBBBB"]
+        AltPoly["Function: create_alternating_polymer()\nMakes: ABABABABAB"]
+    end
+
+    %% Monte Carlo Module
+    subgraph MonteCarlo["monte_carlo.py"]
+        RunMC["Function: run_monte_carlo()\nEach step:\n1. Pick random particle\n2. Try random move\n3. Check energy change\n4. Accept/reject move"]
+        CalcEnergy["Function: calculate_energy()\nUses interactions.py for:\nSpring energy\nParticle interactions\nSurface interactions"]
+        SaveState["Function: save_state()\nEvery 1000 steps:\nSave positions\nCalculate current density"]
+    end
+
+    %% Density Analysis Module
+    subgraph DensityAnalysis["density_analysis.py"]
+        CalcDensity["Function: calculate_density()\nCount particles near surface\nNormalize by volume"]
+        CompSys["Function: compare_systems()\nAverage steady-state density\nCompare block vs alternating"]
+    end
+
+    %% Connections between components
+    Init --> BrushClasses
+    Grid --> GridSetup
+    Chain --> ChainGen
+    Monte --> MonteCarlo
+    Analysis --> DensityAnalysis
+
+    %% Return flows
+    BrushClasses -->|"Returns Class Instances"| Init
+    GridSetup -->|"Returns grafting positions"| Grid
+    ChainGen -->|"Returns polymer chains"| Chain
+    MonteCarlo -->|"Returns simulation results"| Monte
+    DensityAnalysis -->|"Returns final analysis"| Analysis
