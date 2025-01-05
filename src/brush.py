@@ -11,5 +11,8 @@
     #A polymer chain is an a list of class particles, with a grafting position
 """
     Grafting position: [x][y]
-    List of 50 particles: [Particle]
+    List of 10 particles: [Particle]
 """
+
+#define the class: brush.
+    #The polymer brush system is a list of 50 class polymer chain

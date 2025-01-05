@@ -1,16 +1,3 @@
-#Project structure:
-#
-# polymer_simulation/
-# ├── src/
-# │   ├── __init__.py
-# │   ├── polymer.py         # Polymer chain class
-# │   ├── monte_carlo.py     # Monte Carlo simulation steps
-# │   └── interactions.py    # energy calculations
-# └── start_simulation.py    # Main entry point
-
-#define the class: system.
-    #The polymer brush system is a list of 10 class polymer chain
-
 def main():
     print("Initialising System")
     #Randomly assign the bases for 50 polymer chains onto the square grid of 10LX10L where L=1 (100 possible positions)
@@ -32,4 +19,4 @@ For 10 different initial configurations of the system:
 """ 
 
 if __name__ == "__main__":
-    main()
+    main() 

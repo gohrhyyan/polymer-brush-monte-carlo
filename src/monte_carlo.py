@@ -1,3 +1,4 @@
+#function with args(brush)
 #excecutes the monte carlo simulation
 """
 For 10^5 cycles:
