@@ -1,5 +1,8 @@
+from src import *
+
 def main():
     print("Initialising System")
+    
     #Randomly assign the bases for 50 polymer chains onto the square grid of 10LX10L where L=1 (100 possible positions)
         #Enter for loop, 50 times
         #If the point selected is already occupied, regenerate random position

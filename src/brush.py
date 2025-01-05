@@ -1,18 +1,26 @@
-#Define the Class: particle
-    #Each particle should have a Monomer Type, A or B and positional coordinates
-"""
-    Type: A/B
-    X:
-    Y:
-    Z:
-"""
+import numpy
 
-#Define the Class: polymer chain 
-    #A polymer chain is an a list of class particles, with a grafting position
-"""
-    Grafting position: [x][y]
-    List of 10 particles: [Particle]
-"""
+#define class Brush, representing:
+#    1) positions of each particle in each polymer chain.
+#       3D numpy array: 
+#       [chain index, particle index in chain, 3d coordiantes]
+#    2) grafting position of each polymer chain.
+#       2D numpy array:
+#       [x,y]
 
-#define the class: brush.
-    #The polymer brush system is a list of 50 class polymer chain
+class Brush:
+    def __init__(self, NUM_CHAINS, CHAIN_LEN, BASE_LEN):
+        self.particles = numpy.zeros((NUM_CHAINS, CHAIN_LEN, 3))
+        self.graft_pos = numpy.zeros(BASE_LEN)
+
+
+
+#prototype grafting point initialisation
+n_points = 100
+max_x = 10
+max_y = 10
+
+x = np.random.randint(max_x, size=n_points, dtype = uint8)
+y = np.random.randint(max_y, size=n_points, )
+
+    
