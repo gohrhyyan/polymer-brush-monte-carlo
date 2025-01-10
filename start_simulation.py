@@ -1,4 +1,5 @@
 from src import *
+import copy
 
 def main():
     print("Initialising System")
@@ -23,3 +24,5 @@ For 10 different initial configurations of the system:
 
 if __name__ == "__main__":
     main() 
+
+    #use copy.deepcopy(brush class instance) to prevent "crosstalk" pointer screwups
