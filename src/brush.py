@@ -21,24 +21,34 @@ class Brush:
         self.particles = np.zeros((NUM_CHAINS, CHAIN_LEN, 3))
         
         # Initialize an array to store graft positions for each chain
-        # Shape: (NUM_CHAINS, 2 xy coords)
+        # (NUM_CHAINS, 2 xy coords)
         self.graft_pos = np.zeros((NUM_CHAINS, 2))
 
         # use indexing to access the grafing position for a particular chain. 
 
         
     def initialize_brush(self):
+        # to generate grafting coordinates:
         # generate a random array of numbers from 0 to 99, without replacement.
+        # number in 10s place = x axis position
+        # number in 1s place = y axis position
         coords = np.random.choice(100, size=50, replace=False)
 
+        # Assign the coordinates to the chains, using the grafting position array
         # split the digits into valid coordinates:
-        #   floor division by 10 for the x coordinate in the 10s position
-        #   modulo by 10 for the y coordinate in the 1s position
+        #   floor division by 10 to get the x coordinate in the 10s place
+        #   modulo by 10 to get the y coordinate in the 1s place
         self.graft_pos = np.column_stack((coords // 10, coords % 10))
 
+        # Assign positions to all particles.
 
-        #assign this to the z values for each molecule
-        #np.arange(1,self.CHAIN_LEN+1)
+        # assign z-positions, starting with 1 for the first particle in the chain, incrementing by 1 for every 
+        # arange function creates an array starting from 1, ending at 1 over the chain length.
+        # start from 1 because it is not possible for a polymer to be on the grafting surface, which is at z = 0
+        self.particles[:, :, 2]  = np.arange(1, self.CHAIN_LEN + 1)
+
+        
+    
 
 
         
