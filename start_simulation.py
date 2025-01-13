@@ -26,3 +26,4 @@ if __name__ == "__main__":
     main() 
 
     #use copy.deepcopy(brush class instance) to prevent "crosstalk" pointer screwups
+    
