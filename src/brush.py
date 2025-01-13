@@ -79,17 +79,14 @@ class Brush:
         # indexing :2 to set x,y coordinates only
         self.particle_pos[:, :, :2] = self.graft_pos[:, None, :]
 
-        # uncomment these 2 lines to view coordinates (for debugging)
-        # for chain in self.particles:
-        #   print(chain)
-
+        """"TO IMPLEMENT"""
         #loop over all particles
-
             #calculate particle interaction energy, update cache
             #calculate spring energy, update cache
             #calculate surface energy, update cache
         
         """calculate total energy"""
+        #IMPT: Sum of all particle energy must be divided by 2 to avoid double counting
 
     def set_type(self, is_block):
         # initialize a new numpy array with chain length to store the desired type pattern
@@ -114,5 +111,6 @@ class Brush:
             # trim pattern to the same length as CHAIN_LEN
             target_pattern = np.tile([1, -1], -(self.CHAIN_LEN // -2))[:self.CHAIN_LEN]
         
+        # set all particle chains to use the target type pattern
         self.particle_type[:] = target_pattern
         
