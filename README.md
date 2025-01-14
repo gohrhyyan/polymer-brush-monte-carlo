@@ -6,8 +6,8 @@ polymer_simulation/
 │   ├── __init__.py
 │   ├── brush.py          # Polymer brush class
 │   ├── monte_carlo.py     # Monte Carlo simulation steps
+│   ├── config.py
 │   └── interactions.py    # energy calculations
-├── config.py
 └── start_simulation.py    # Main entry point
 
 Please note Python conventions as defined in PEP 8 (Python's official style guide):
