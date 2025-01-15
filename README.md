@@ -11,7 +11,6 @@ polymer_simulation/
 └── start_simulation.py    # Main entry point
 
 Please note Python conventions as defined in PEP 8 (Python's official style guide):
-
 snake_case:
 - Function names: `calculate_energy()`, `monte_carlo_step()`
 - Variable names: `particle_count`, `total_energy`

@@ -76,7 +76,6 @@ class Brush:
                                       (config.CHAIN_LEN + 1) * config.SPRING_START_LENGTH,
                                       config.SPRING_START_LENGTH)
 
-
         # assign x and y positions.
         # shape of graft_pos is (50 chains, 2 coordinates)
         # adding None converts the array into (50,1,2) meaning [50 chains, 1 particle, 2 coordinates (x,y)]
@@ -121,5 +120,5 @@ class Brush:
             target_pattern = np.tile([1, -1], -(config.CHAIN_LEN // -2))[:config.CHAIN_LEN]
         
         # set all particle chains to use the target type pattern
-        self.particle_type[:] = target_pattern
+        self.z[:] = target_pattern
         

@@ -20,3 +20,24 @@ def calc_particle_interaction(type1, type2, pos1, pos2):
         # unlike types, AB or BA 1-1 or -11 will = -1 when multiplied, for the negative cint in attractive interactions 
         return (type1 * type2) * config.C_INTERACTION * np.cos((np.pi/2) * (dist/config.R_SIZE))
     return 0.0
+
+def calc_particle_interactions(particle_positions, particle_types, key_particle_idx):
+    #key_particle_idx = a 1d list of [chain index, particle in chain index]
+    #particle_positions = self.particle_pos from brush
+    #particle_types = self. particle_type from bush
+
+    #create a mask that will be used across particle pos and particle type 
+
+    #get the particle pos and particle type of the particle index particle_idx and store them as variables
+    #key_particle_position = 
+    #key_particle_type = 
+
+    #mask out particle_idx from particle_positions and particle_types
+
+    #distances = np.linalg.norm(particle_position - key_particle_positon)
+
+    #mask out particles that are further away than R_SIZE while maintaining the previous mask of particle_idx
+
+    # Calculate interactions where mask is True
+
+    # Sum all interactions
