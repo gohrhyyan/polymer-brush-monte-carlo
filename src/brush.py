@@ -18,28 +18,28 @@ class Brush:
         """physical information""" 
         # Initialise 3d array to store particle positions for each chain.
         # (chain number, particle in chain, 3 xyz coords) 
-        self.particle_pos = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN, 3))
+        self.particle_positions = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN, 3))
         
         # Initialize a 2d array to store graft positions for each chain
         # (chain number, 2 xy coords)
-        self.graft_pos = np.zeros((config.NUM_CHAINS, 2))
+        self.graft_positions = np.zeros((config.NUM_CHAINS, 2))
 
         # Initialize a 2d array to store type (A/B) for each particle
         # Type A will be equivilant to 1, type B will be equivilant to -1
-        self.particle_type = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN))
+        self.particle_types = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN))
 
         """energy cache"""
         # Stores of energy to reduce compute time.
 
         # Initialize a 2d array to store the energy of the spring BELOW each particle
         # (chain number, particle in chain) 
-        self.spring_energy = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN))
+        self.spring_energies = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN))
 
         # Initialize a 2d array to store the energy of each particle's interaction with every other particle.
-        self.particle_energy = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN))
+        self.particle_energies = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN))
 
         # Initialize a 2d array to store the energy of each particle's interaction with the surface.
-        self.surface_energy = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN))
+        self.surface_energies = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN))
 
         #initialise a variable to store the total energy of the system
         self.total_energy = 0.0
@@ -58,38 +58,38 @@ class Brush:
         y_coords = random_flat_indices // config.BASE_LEN_X
 
         #combine the x and y coordinates into a single 2d array and assign the grafting coordinates
-        self.graft_pos = np.column_stack((x_coords, y_coords))
+        self.graft_positions = np.column_stack((x_coords, y_coords))
 
         # Assign grafting positions to all particles.
-        # graft_pos is a 3d array with shape [config.NUM_CHAINS, config.CHAIN_LEN, 3], and particle_pos is a 2d array with shape [config.NUM_CHAINS, 2]
+        # graft_positions is a 3d array with shape [config.NUM_CHAINS, config.CHAIN_LEN, 3], and particle_positions is a 2d array with shape [config.NUM_CHAINS, 2]
         # particles is indexed without the z-coordinate [:, :, :2] into shape [config.NUM_CHAINS, config.CHAIN_LEN, 2]
         # graft pos is indexed with an additonal axis [:, None, :] into shape [config.NUM_CHAINS, 1, 2]
-        # numpy broadcasting copies the co-ordinate for each chain in graft_pos to all particles in particle_pos.
-        self.particle_pos[:, :, :2] = self.graft_pos[:, None, :] 
+        # numpy broadcasting copies the co-ordinate for each chain in graft_positions to all particles in particle_positions.
+        self.particle_positions[:, :, :2] = self.graft_positions[:, None, :] 
 
         # assign z-positions
         # start from config.SPRING_START_LENGTH because it is the minimum height off grafting surface, which is at z = 0
         # np.arange(config.SPRING_START_LENGTH, config.CHAIN_LEN + 1) creates a 1d array starting from 1, ending at (CHAIN_LEN+1)*SPRING_START_LENGTH, with SPRING_START_LENGTH spacing
         # indexing self.particles[:, :, 2] referencess all z-axis values for all particles in all chains.
         # numpy broadcasting copies coordinates to all chains
-        self.particle_pos[:, :, 2] = np.arange(config.SPRING_START_LENGTH, 
+        self.particle_positions[:, :, 2] = np.arange(config.SPRING_START_LENGTH, 
                                       (config.CHAIN_LEN + 1) * config.SPRING_START_LENGTH,
                                       config.SPRING_START_LENGTH)
 
         # assign x and y positions.
-        # shape of graft_pos is (50 chains, 2 coordinates)
+        # shape of graft_positions is (50 chains, 2 coordinates)
         # adding None converts the array into (50,1,2) meaning [50 chains, 1 particle, 2 coordinates (x,y)]
         # numpy broadcasting copies coordinates to all particles in each chain,
         # indexing :2 to set x,y coordinates only
-        self.particle_pos[:, :, :2] = self.graft_pos[:, None, :]
+        self.particle_positions[:, :, :2] = self.graft_positions[:, None, :]
 
         # if config.SPRING_START_LENGTH > 0, all particles are at z > 0 at the start, no particles are interacting with the surface.
         # otherwise, if config.SPRING_START_LENGTH <= 0 all particles are either on or inside the surface, and are interacting with the surface.
-        # therefore the config.SPRING_START_LENGTH can be used with the calc_surface_energy() function to determine the starting surface interaction energy of all particles.
-        self.surface_energy.fill(interactions.calc_surface_energy(config.SPRING_START_LENGTH))
+        # therefore the config.SPRING_START_LENGTH can be used with the calc_surface_energies() function to determine the starting surface interaction energy of all particles.
+        self.surface_energies.fill(interactions.calc_surface_energies(config.SPRING_START_LENGTH))
 
         # therefore, all springs are the same length and have the same energy
-        self.spring_energy.fill(interactions.calc_spring_energy(0, config.SPRING_START_LENGTH))
+        self.spring_energies.fill(interactions.calc_spring_energies(0, config.SPRING_START_LENGTH))
 
         """initialize particle interaction energy"""
         """calculate total energy"""
@@ -120,5 +120,5 @@ class Brush:
             target_pattern = np.tile([1, -1], -(config.CHAIN_LEN // -2))[:config.CHAIN_LEN]
         
         # set all particle chains to use the target type pattern
-        self.z[:] = target_pattern
+        self.particle_types[:] = target_pattern
         

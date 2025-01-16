@@ -21,23 +21,35 @@ def calc_particle_interaction(type1, type2, pos1, pos2):
         return (type1 * type2) * config.C_INTERACTION * np.cos((np.pi/2) * (dist/config.R_SIZE))
     return 0.0
 
-def calc_particle_interactions(particle_positions, particle_types, key_particle_idx):
-    #key_particle_idx = a 1d list of [chain index, particle in chain index]
-    #particle_positions = self.particle_pos from brush
-    #particle_types = self. particle_type from bush
 
-    #create a mask that will be used across particle pos and particle type 
+   
+def calc_particle_interactions(particle_positions, particle_types, ref_chain_idx, ref_particle_in_chain_idx):
 
-    #get the particle pos and particle type of the particle index particle_idx and store them as variables
-    #key_particle_position = 
-    #key_particle_type = 
+    ref_particle_position = particle_positions[ref_chain_idx, ref_particle_in_chain_idx]
+    ref_particle_type = particle_types[ref_chain_idx, ref_particle_in_chain_idx]
+    
+    # initialise a boolean mask array with the same shape as particle_positions
+    # mask will help to exclude particles not under analysis
+    mask = np.ones_like(particle_types, dtype=bool)
 
-    #mask out particle_idx from particle_positions and particle_types
-
-    #distances = np.linalg.norm(particle_position - key_particle_positon)
-
-    #mask out particles that are further away than R_SIZE while maintaining the previous mask of particle_idx
-
-    # Calculate interactions where mask is True
-
-    # Sum all interactions
+    # exclude the reference particle, as we are not 
+    mask[ref_chain_idx, ref_particle_in_chain_idx] = False
+    
+    # use a "bounding box" to reduce the number of particles that need to be analysised
+    # progressively mask out particles that are outside the bounding box along each axis
+    for axis in range(3):
+        mask[mask] = np.abs(particle_positions[mask][:,axis] - ref_particle_position[axis]) <= config.R_SIZE
+    
+    #  calculate distances between reference particle and the remaining particles inside the bounding box
+    diff = particle_positions - ref_particle_position
+    distances = np.linalg.norm(diff, axis=2)  
+    
+    # mask out remaining particles outside interaction radius
+    mask = mask & (distances < config.R_SIZE)
+    
+    interaction_energies = (ref_particle_type * particle_types[mask]) * config.C_INTERACTION * \
+                         np.cos((np.pi/2) * (distances[mask]/config.R_SIZE))
+    
+    total_interaction = np.sum(interaction_energies)
+    
+    return total_interaction
