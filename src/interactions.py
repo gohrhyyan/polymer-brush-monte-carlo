@@ -5,24 +5,19 @@ import config
 
 # calculates spring energy between two points
 def calc_spring_energy(pos1, pos2):
-    return 0.5 * config.K_SPRING * (np.linalg.norm(pos1 - pos2))**2
+    if(config.VERBOSE): print(f"Interactions.py, calc_spring_energy started, received positions: pos1: {pos1},  pos2:{pos2}")
+    spring_energy = 0.5 * config.K_SPRING * (np.linalg.norm(pos1 - pos2))**2
+    if(config.VERBOSE): print(f"Interactions.py, calc_spring_energy calcualted spring energy: {spring_energy}")
+    return spring_energy
 
 # calculates surface interaction energy
 def calc_surface_energy(z):
-    return config.SURFACE_INTERACTION_ENERGY if z <= 0 else 0.0
+    if(config.VERBOSE): print(f"Interactions.py, calc_surface_energy started, received z: {z}")
+    surface_energy = config.SURFACE_INTERACTION_ENERGY if z <= 0 else 0.0
+    if(config.VERBOSE): print(f"Interactions.py, calc_surface_energy calcualted surface energy: {surface_energy}")
+    return surface_energy
 
-# calculates particle interaction energy
-    # type1 and type2 are the particle types: 1 or -1 corresponding to A or B respectively
-def calc_particle_interaction(type1, type2, pos1, pos2):
-    dist = np.linalg.norm(pos1 - pos2)
-    if dist < config.R_SIZE:
-        # like types, AA or BB 11 or -1-1 will = 1 when multiplied, for the positive cint in repulsive interactions 
-        # unlike types, AB or BA 1-1 or -11 will = -1 when multiplied, for the negative cint in attractive interactions 
-        return (type1 * type2) * config.C_INTERACTION * np.cos((np.pi/2) * (dist/config.R_SIZE))
-    return 0.0
-
-
-   
+# calculates the interaction energy between the current particle and all other particles in the system 
 def calc_particle_interactions(particle_positions, particle_types, ref_chain_idx, ref_particle_in_chain_idx):
 
     ref_particle_position = particle_positions[ref_chain_idx, ref_particle_in_chain_idx]
@@ -32,7 +27,7 @@ def calc_particle_interactions(particle_positions, particle_types, ref_chain_idx
     # mask will help to exclude particles not under analysis
     mask = np.ones_like(particle_types, dtype=bool)
 
-    # exclude the reference particle, as we are not 
+    # exclude the reference particle, as it cannot interact with itself
     mask[ref_chain_idx, ref_particle_in_chain_idx] = False
     
     # use a "bounding box" to reduce the number of particles that need to be analysised
@@ -47,8 +42,8 @@ def calc_particle_interactions(particle_positions, particle_types, ref_chain_idx
     # mask out remaining particles outside interaction radius
     mask = mask & (distances < config.R_SIZE)
     
-    interaction_energies = (ref_particle_type * particle_types[mask]) * config.C_INTERACTION * \
-                         np.cos((np.pi/2) * (distances[mask]/config.R_SIZE))
+    # calculate the interaction energy between each particle within the interaction sphere and 
+    interaction_energies = (ref_particle_type * particle_types[mask]) * config.C_INTERACTION * np.cos((np.pi/2) * (distances[mask]/config.R_SIZE))
     
     total_interaction = np.sum(interaction_energies)
     
