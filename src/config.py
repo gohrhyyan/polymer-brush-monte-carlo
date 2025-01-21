@@ -1,0 +1,16 @@
+import numpy as np 
+# Simulation configuration
+BASE_LEN_X = 10
+BASE_LEN_Y = 10
+NUM_CHAINS = 50
+CHAIN_LEN = 10
+SPRING_START_LENGTH = 1
+PRECISION = np.float32
+
+# Physical constants
+K_SPRING = 1
+C_INTERACTION = 1
+R_SIZE = 1 
+SURFACE_INTERACTION_ENERGY = 1e9
+
+VERBOSE = False
