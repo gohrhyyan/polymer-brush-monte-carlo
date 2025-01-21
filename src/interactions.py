@@ -19,38 +19,37 @@ def calc_surface_energy(z):
     return surface_energy
 
 
-# calculates the interaction energy between the current particle and all other particles in the system 
-def calc_particle_interactions(particle_positions, particle_types, ref_chain_idx, ref_particle_in_chain_idx):
+# calculates the interaction energy between a reference particle and all other particles in the system 
+def calc_particle_interactions(particle_positions, particle_types, ref_chain_idx, ref_particle_idx, ref_particle_position):
     if(config.VERBOSE): print(f"""
 Interactions.py, calc_particle_interactions started.
 Particle positions array:\n{particle_positions}\n
 Particle types array:\n{particle_types}\n
 Reference chain index: {ref_chain_idx}
-Reference particle in chain index: {ref_particle_in_chain_idx}""")
+Reference particle in chain index: {ref_particle_idx}
+Reference particle position: {ref_particle_position},""")
 
     # Get the position and type of the reference particle from the arrays representing the entire brush.
-    ref_particle_position = particle_positions[ref_chain_idx, ref_particle_in_chain_idx]
-    ref_particle_type = particle_types[ref_chain_idx, ref_particle_in_chain_idx]    
-    if(config.VERBOSE): print(f"Interactions.py, calc_particle_interactions retrieved reference particle position: {ref_particle_position}, type:{ref_particle_type}")
+    ref_particle_type = particle_types[ref_chain_idx, ref_particle_idx]    
+    if(config.VERBOSE): print(f"Interactions.py, calc_particle_interactions retrieved reference particle type:{ref_particle_type}")
     
     # use a "bounding box" to reduce the number of particles that need to be analysised
-    # mask out particles that are outside the bounding box along each axis
-    # the particle is within the bounding box: update mask to true
-    # the particle is outside the boundning box: update mask to false
-    
-    # calculate bounding box limits
-    # smallest and largest possible x,y,z co-ordinates:
+    # calculate smallest and largest possible x,y,z co-ordinates:
     box_min = ref_particle_position - config.R_SIZE
     box_max = ref_particle_position + config.R_SIZE
 
+    # initialize mask that exclcludes particles outside bounding box, all particles start as True, inside the bounding box
     bounding_box_mask = np.ones_like(particle_types, dtype=bool)
     
+    # mask out particles that are outside the bounding box along each axis
+    # if the particle is outside the boundning box: update mask to false
     # Particles already masked as false are not repeated, using bounding_box_mask[bounding_box_mask]
-    for axis in range(3):
-        bounding_box_mask[bounding_box_mask] = (box_min[axis] <= particle_positions[bounding_box_mask][:, axis]) & (particle_positions[bounding_box_mask][:, axis] <= box_max[axis])
+    #for axis in range(3): 
+        #bounding_box_mask[bounding_box_mask] = (box_min[axis] <= particle_positions[bounding_box_mask][:, axis]) & (particle_positions[bounding_box_mask][:, axis] <= box_max[axis])
+# ^^^ THIS ACTUALLY MAKES IT SLOWER
 
     # exclude the reference particle, as it cannot interact with itself
-    bounding_box_mask[ref_chain_idx, ref_particle_in_chain_idx] = False
+    bounding_box_mask[ref_chain_idx, ref_particle_idx] = False
     if(config.VERBOSE): print(f"Interactions.py, calc_particle_interactions set reference particle to false:\n{bounding_box_mask}\n")
     
     # calculate exact spherical distances between reference particle and the remaining particles inside the bounding box

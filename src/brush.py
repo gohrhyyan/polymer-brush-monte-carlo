@@ -28,6 +28,9 @@ class Brush:
         # Type A will be equivilant to 1, type B will be equivilant to -1
         self.particle_types = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN), dtype= config.PRECISION)
 
+        # Initialize a List to store information about any pending moves
+        self.pending_move = None
+
 
         """energy cache""" # Stores of energy to reduce compute time.
         # Initialize a 2d array to store the energy of the spring BELOW each particle
@@ -90,11 +93,24 @@ class Brush:
         # therefore, all springs are the same length and have the same energy
         self.spring_energies.fill(interactions.calc_spring_energy(0, config.SPRING_START_LENGTH))
 
-        """initialize particle interaction energy"""
+        # initialize particle interaction energy
+        for ref_chain_idx in range(config.NUM_CHAINS):
+            for ref_particle_idx in range(config.CHAIN_LEN):
+                # Calculate interaction energy between this particle and all others
+                ref_particle_position = self.particle_positions[ref_chain_idx, ref_particle_idx]
+                interaction_energy = interactions.calc_particle_interactions(
+                    self.particle_positions,
+                    self.particle_types,
+                    ref_chain_idx,
+                    ref_particle_idx,
+                    ref_particle_position
+                )
+                self.particle_energies[ref_chain_idx, ref_particle_idx] = interaction_energy
+
         """calculate total energy"""
         #IMPT: Sum of all particle energy must be divided by 2 to avoid double counting
+        self.total_energy = np.sum(self.spring_energies) + np.sum(self.surface_energies) + (np.sum(self.particle_energies) / 2)
         
-
     def set_type(self, is_block):
         # initialize a new numpy array with chain length to store the desired type pattern
         target_pattern = np.zeros(config.CHAIN_LEN)
@@ -120,4 +136,55 @@ class Brush:
         
         # set all particle chains to use the target type pattern
         self.particle_types[:] = target_pattern
+    
+    def test_move(self, ref_chain_idx, ref_particle_idx, move_dir, move_magnitude):
         
+        # get new suggested co-ordinates.
+        new_pos = self.particle_positions[ref_chain_idx, ref_particle_idx].copy()
+        new_pos[move_dir] += move_magnitude
+
+        # initialise a bool to indicate if the reference particle is the last particle in the chain. (avoids checking again later)
+        # if the reference particle index (0 indexed) is equal to the chain length - 1 (1 indexed) then the reference particle is the last particle in the chain.
+        is_last = (ref_particle_idx == config.CHAIN_LEN - 1)
+
+        old_spring_above = 0 if is_last else self.spring_energies[ref_chain_idx, ref_particle_idx + 1]
+        old_spring_below = self.spring_energies[ref_chain_idx,ref_particle_idx]
+        old_surface = self.surface_energies[ref_chain_idx,ref_particle_idx]
+        old_interaction = self.particle_energies[ref_chain_idx,ref_particle_idx]
+
+        new_spring_above = 0 if is_last else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx + 1])
+        new_spring_below = interactions.calc_spring_energy(new_pos,self.particle_positions[ref_chain_idx,ref_particle_idx])
+        new_surface = interactions.calc_surface_energy(new_pos[2])
+        new_interaction = interactions.calc_particle_interactions(self.particle_positions,self.particle_types,ref_chain_idx,ref_particle_idx, ref_particle_position=new_pos)
+        
+        # calculate the total delta e
+        delta_e = ((new_spring_above - old_spring_above) +  # where spring_above is 0 for last particle
+            (new_spring_below - old_spring_below) + 
+            (new_surface - old_surface) + 
+            (new_interaction - old_interaction))
+
+        # store the calculated energies, reference particle information,
+        self.pending_move = [is_last, ref_chain_idx, ref_particle_idx, new_spring_above, new_spring_below, new_surface, new_interaction, delta_e, new_pos]
+
+        return delta_e
+
+    def accept_move(self):
+        # update class energies and positions with information in self.pending_move
+        # unpack pending move information
+        is_last, ref_chain_idx, ref_particle_idx, new_spring_above, new_spring_below, new_surface, new_interaction, delta_e, new_pos = self.pending_move
+        
+        # Update particle position
+        self.particle_positions[ref_chain_idx, ref_particle_idx] = new_pos
+
+        # Update cached energies for the moved particle
+        if not is_last: self.spring_energies[ref_chain_idx, ref_particle_idx + 1] = new_spring_above
+        self.spring_energies[ref_chain_idx, ref_particle_idx] = new_spring_below
+        self.surface_energies[ref_chain_idx, ref_particle_idx] = new_surface
+        self.particle_energies[ref_chain_idx, ref_particle_idx] = new_interaction
+
+        # Update total system energy
+        self.total_energy += delta_e
+
+        # Clear pending move
+        self.pending_move = None
+        #clear self.pending_move
