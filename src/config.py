@@ -5,7 +5,7 @@ BASE_LEN_Y = 10
 NUM_CHAINS = 50
 CHAIN_LEN = 10
 SPRING_START_LENGTH = 1
-PRECISION = np.float16
+PRECISION = np.float32
 
 # Physical constants
 K_SPRING = 1
