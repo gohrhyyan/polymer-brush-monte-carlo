@@ -1,6 +1,4 @@
 #Flatten and filter out elements with z < 2
-
-
 def calcdensity(new_brush):
     filtered_positions = [
         particle.tolist()

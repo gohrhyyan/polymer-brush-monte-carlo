@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
 
 #Data for number of steps (x) and equilibrium densities (y)
 def plotting(banana):

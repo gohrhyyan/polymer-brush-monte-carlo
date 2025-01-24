@@ -2,15 +2,7 @@ import numpy as np
 import interactions
 import config
 
-#define class Brush, representing:
-#    1) positions of each particle in each polymer chain.
-#       3D numpy array: 
-#       [chain index, particle index in chain, 3d coordiantes]
-
-#    2) grafting position of each polymer chain.
-#       2D numpy array:
-#       [x,y]
-
+#define class Brush, containing all information about the current state of the polymer brush
 class Brush: 
     def __init__(self):
         # use indexing to access the data for a given particle.
@@ -54,7 +46,7 @@ class Brush:
         # generate a numpy array of length config.NUM_CHAINS with random numbers from 0 and total_positions -1
         random_flat_indices = np.random.choice(total_positions, size=config.NUM_CHAINS, replace=False)
 
-        # convert the array of numbers between 0 and total_positions into x and y coordinates.
+        # convert the random array of numbers between 0 and total_positions into random x and y coordinates.
         # see: https://softwareengineering.stackexchange.com/questions/212808/treating-a-1d-data-structure-as-2d-grid
         x_coords = random_flat_indices % config.BASE_LEN_X
         y_coords = random_flat_indices // config.BASE_LEN_X
@@ -62,14 +54,14 @@ class Brush:
         #combine the x and y coordinates into a single 2d array and assign the grafting coordinates
         self.graft_positions = np.column_stack((x_coords, y_coords))
 
-        # Assign grafting positions to all particles.
-        # graft_positions is a 3d array with shape [config.NUM_CHAINS, config.CHAIN_LEN, 3], and particle_positions is a 2d array with shape [config.NUM_CHAINS, 2]
-        # particles is indexed without the z-coordinate [:, :, :2] into shape [config.NUM_CHAINS, config.CHAIN_LEN, 2]
+        # assign grafting x,y positions to all particles.
+        # particle_positionsis a 3d array with shape [config.NUM_CHAINS, config.CHAIN_LEN, 3], and graft_positions is a 2d array with shape [config.NUM_CHAINS, 2]
+        # particles are indexed without the z-coordinate [:, :, :2] into shape [config.NUM_CHAINS, config.CHAIN_LEN, 2]
         # graft pos is indexed with an additonal axis [:, None, :] into shape [config.NUM_CHAINS, 1, 2]
         # numpy broadcasting copies the co-ordinate for each chain in graft_positions to all particles in particle_positions.
         self.particle_positions[:, :, :2] = self.graft_positions[:, None, :] 
 
-        # assign z-positions
+        # assign z-positions to all particles
         # start from config.SPRING_START_LENGTH because it is the minimum height off grafting surface, which is at z = 0
         # np.arange(config.SPRING_START_LENGTH, config.CHAIN_LEN + 1) creates a 1d array starting from 1, ending at (CHAIN_LEN+1)*SPRING_START_LENGTH, with SPRING_START_LENGTH spacing
         # indexing self.particles[:, :, 2] referencess all z-axis values for all particles in all chains.
@@ -94,21 +86,20 @@ class Brush:
         self.spring_energies.fill(interactions.calc_spring_energy(0, config.SPRING_START_LENGTH))
 
         # initialize particle interaction energy
+        # calcuate for all particles in all chains
         for ref_chain_idx in range(config.NUM_CHAINS):
             for ref_particle_idx in range(config.CHAIN_LEN):
-                # Calculate interaction energy between this particle and all others
-                ref_particle_position = self.particle_positions[ref_chain_idx, ref_particle_idx]
-                interaction_energy = interactions.calc_particle_interactions(
+                # calculate and assign interaction energy for this particle
+                self.particle_energies[ref_chain_idx, ref_particle_idx] = interactions.calc_particle_interactions(
                     self.particle_positions,
                     self.particle_types,
                     ref_chain_idx,
                     ref_particle_idx,
-                    ref_particle_position
+                    ref_particle_position = self.particle_positions[ref_chain_idx, ref_particle_idx]
                 )
-                self.particle_energies[ref_chain_idx, ref_particle_idx] = interaction_energy
 
-        """calculate total energy"""
-        #IMPT: Sum of all particle energy must be divided by 2 to avoid double counting
+        # calculate total energy      
+        # IMPT: Sum of all particle energy must be divided by 2 to avoid double counting
         self.total_energy = np.sum(self.spring_energies) + np.sum(self.surface_energies) + (np.sum(self.particle_energies) / 2)
         
     def set_type(self, is_block):
@@ -134,26 +125,38 @@ class Brush:
             # trim pattern to the same length as config.CHAIN_LEN
             target_pattern = np.tile([1, -1], -(config.CHAIN_LEN // -2))[:config.CHAIN_LEN]
         
-        # set all particle chains to use the target type pattern
+        # set all particles to follow the  target type pattern
         self.particle_types[:] = target_pattern
     
+    # method to calculate state of brush after move, without altering the brush.
+    # returns: delta_e
+    # stores: move information waiting for accept_move() call.
     def test_move(self, ref_chain_idx, ref_particle_idx, move_dir, move_magnitude):
-        
-        # get new suggested co-ordinates.
+        # retrive current reference particle position
         new_pos = self.particle_positions[ref_chain_idx, ref_particle_idx].copy()
+
+        # increment the coordinate of the single axis by the magnitude
         new_pos[move_dir] += move_magnitude
 
         # initialise a bool to indicate if the reference particle is the last particle in the chain. (avoids checking again later)
         # if the reference particle index (0 indexed) is equal to the chain length - 1 (1 indexed) then the reference particle is the last particle in the chain.
+        # this prevents index out of bounds errors, and attempts to calculate energy against non-existant particles
         is_last = (ref_particle_idx == config.CHAIN_LEN - 1)
 
+        # initialise a bool to indicate if the reference particle is the first particle in the chain. (avoids checking again later)
+        # if the reference particle index (0 indexed) is equal to 0 then the reference particle is the last particle in the chain.
+        # if true, the spring below calculation will be against the grafting point.
+        is_first = (ref_particle_idx == 0)
+        
+        # get the current energies from the energy cache
         old_spring_above = 0 if is_last else self.spring_energies[ref_chain_idx, ref_particle_idx + 1]
         old_spring_below = self.spring_energies[ref_chain_idx,ref_particle_idx]
         old_surface = self.surface_energies[ref_chain_idx,ref_particle_idx]
         old_interaction = self.particle_energies[ref_chain_idx,ref_particle_idx]
 
+        # calculate the new energies with the new particle position
         new_spring_above = 0 if is_last else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx + 1])
-        new_spring_below = interactions.calc_spring_energy(new_pos,self.particle_positions[ref_chain_idx,ref_particle_idx])
+        new_spring_below = interactions.calc_spring_energy(new_pos, np.append(self.graft_positions[ref_chain_idx],0)) if is_first else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx - 1]) 
         new_surface = interactions.calc_surface_energy(new_pos[2])
         new_interaction = interactions.calc_particle_interactions(self.particle_positions,self.particle_types,ref_chain_idx,ref_particle_idx, ref_particle_position=new_pos)
         

@@ -33,9 +33,9 @@ new_brush.initialize_positions()
 new_brush.set_type(is_block = True)
 for i in range(100):
     run_monte_carlo(new_brush, 1, num_steps=1000)
-    banana = density_calculation.calcdensity(new_brush)
-    print(banana)
-    y.append(banana)
+   #banana = density_calculation.calcdensity(new_brush)
+    #print(banana)
+    #y.append(banana)
 final_time = time.time() - start_time
 print(final_time)
-plots.plotting(y)
+#plots.plotting(y)

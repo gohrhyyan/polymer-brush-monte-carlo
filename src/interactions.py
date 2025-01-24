@@ -1,8 +1,6 @@
 import numpy as np
 import config
 
-# np.linalg.norm() is a function that calculates the magnitude of the distance between two points, eqivilant to pythagoras theorem
-
 # calculates spring energy between two points
 def calc_spring_energy(pos1, pos2):
     if(config.VERBOSE): print(f"Interactions.py, calc_spring_energy started, received positions: pos1: {pos1},  pos2:{pos2}")
