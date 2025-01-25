@@ -30,6 +30,7 @@ def run_monte_carlo(brush, temperature, num_steps):
 start_time = time.time()
 new_brush = brush.Brush()
 new_brush.initialize_positions()
+
 new_brush.set_type(is_block = True)
 for i in range(100):
     run_monte_carlo(new_brush, 1, num_steps=1000)
