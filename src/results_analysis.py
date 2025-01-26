@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import config
+from . import config
 import numpy as np
 
 #Data for number of steps (x) and equilibrium densities (y)

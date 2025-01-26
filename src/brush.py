@@ -1,6 +1,6 @@
 import numpy as np
-import interactions
-import config
+from . import interactions
+from . import config
 
 #define class Brush, containing all information about the current state of the polymer brush
 class Brush: 

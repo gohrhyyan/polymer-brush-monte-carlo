@@ -1,5 +1,5 @@
 import numpy as np
-import config
+from . import config
 
 # calculates spring energy between two points
 def calc_spring_energy(pos1, pos2):
