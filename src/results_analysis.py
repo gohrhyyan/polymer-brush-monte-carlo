@@ -23,8 +23,4 @@ def plotting(banana):
     #Show the plot
     plt.show()
 
-NEAR_SURFACE_VOLUME = config.BASE_LEN_Y * config.BASE_LEN_X * config.DENSITY_CALC_Z_BOUNDARY
-def calc_density(brush):
-    mask = brush.particle_positions[:, :, 2] <= config.DENSITY_CALC_Z_BOUNDARY
-    density = np.sum(mask) / NEAR_SURFACE_VOLUME
-    return density
+

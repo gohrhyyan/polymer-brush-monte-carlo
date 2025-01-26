@@ -3,17 +3,14 @@ import copy
 
 def main():
     print("Initialising System")
-    
-    #Randomly assign the bases for 50 polymer chains onto the square grid of 10LX10L where L=1 (100 possible positions)
-        #Enter for loop, 50 times
-        #If the point selected is already occupied, regenerate random position
+    start_time = time.time()
+    new_brush = brush.Brush()
+    new_brush.initialize_positions()
+    new_brush.set_type(is_block = True)
+    run_monte_carlo(new_brush, 1)
+    final_time = time.time() - start_time
+    print(final_time)
 
-    #Generate each chain, as a system of 10 particles.
-    #Note, this needs to be done for 2 types of system, alternating copolymer and diblock copolymer
-        #For each coordinate in BASES
-            #Enter For loop 10 times
-                #All particles in a chain must have the same x and y position
-                #All particles in the chain are seperated by a unit of 1 in the z axis
 """
 
 For 10 different initial configurations of the system:
