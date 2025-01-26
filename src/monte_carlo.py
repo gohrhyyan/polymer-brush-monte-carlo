@@ -1,6 +1,4 @@
-import brush
 import numpy as np
-import time
 import config
 
 # excecutes the monte carlo simulation
