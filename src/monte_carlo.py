@@ -26,7 +26,7 @@ def run_monte_carlo(brush, temperature):
             delta_e = brush.test_move(chain_idx, particle_idx, move_direction, move_magnitude)
             
             # acceptance criteria
-            if np.random.random() > np.exp(-delta_e / temperature):
+            if np.random.random() < np.exp(-delta_e / temperature):
                 brush.accept_move()
     
         current_surface_density = calc_density(brush)

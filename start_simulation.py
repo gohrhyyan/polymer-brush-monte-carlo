@@ -6,8 +6,8 @@ def main():
     start_time = time.time()
     new_brush = brush.Brush()
     new_brush.initialize_positions()
-    new_brush.set_type(is_block = True)
-    run_monte_carlo(new_brush, 1)
+    new_brush.set_type(is_block = False)
+    run_monte_carlo(new_brush, 0.5)
     final_time = time.time() - start_time
     print(final_time)
 
