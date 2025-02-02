@@ -1,17 +1,15 @@
 import numpy as np
 from . import config
 
-# excecutes the monte carlo simulation
-NEAR_SURFACE_VOLUME = config.BASE_LEN_Y * config.BASE_LEN_X * config.DENSITY_CALC_Z_BOUNDARY
-def calc_density(brush):
-    mask = brush.particle_positions[:, :, 2] <= config.DENSITY_CALC_Z_BOUNDARY
-    density = np.sum(mask) / NEAR_SURFACE_VOLUME
-    return density
-
 
 def run_monte_carlo(brush, temperature):
-    # Main Monte Carlo loop
-    saved_surface_densities = np.zeros(config.TIMES_TO_SAVE, dtype = config.PRECISION)
+    # Pre-allocate array to store all particle positions at save points
+    # Shape: (save_points, chains, particles_per_chain, xyz_coords)
+    saved_positions = np.zeros((config.TIMES_TO_SAVE, 
+                              config.NUM_CHAINS,
+                              config.CHAIN_LEN,
+                              3), dtype=config.PRECISION)
+    
     for save_number in range(config.TIMES_TO_SAVE):
         for iteration in range(config.ITERATIONS_BETWEEN_SAVES):
             # randomly select a particle
@@ -29,9 +27,18 @@ def run_monte_carlo(brush, temperature):
             if np.random.random() < np.exp(-delta_e / temperature):
                 brush.accept_move()
     
-        current_surface_density = calc_density(brush)
-        print(current_surface_density)
-        saved_surface_densities[save_number] = current_surface_density
+        # save the current particle positions for density calculation later
+        saved_positions[save_number] = brush.particle_positions
     
-    return saved_surface_densities
+    # Calculate the volume for density calculation
+    volume = config.BASE_LEN_Y * config.BASE_LEN_X * config.DENSITY_CALC_Z_BOUNDARY
+
+    # Flag z-coordinates that are below than or equal to the z_boundary
+    mask = saved_positions[..., 2] <= config.DENSITY_CALC_Z_BOUNDARY
+
+    # Sum over all chains and particles for each save point
+    # densities is a 1d array of the calculated near-surface density at each save point. config.length = TIMES_TO_SAVE
+    densities = np.sum(mask, axis=(1, 2)) / volume
+
+    return densities
 

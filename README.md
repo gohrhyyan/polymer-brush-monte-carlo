@@ -5,8 +5,8 @@ polymer_simulation/
 ├── src/
 │   ├── __init__.py
 │   ├── brush.py          # Polymer brush class
-│   ├── monte_carlo.py     # Monte Carlo simulation steps
 │   ├── config.py
+│   ├── monte_carlo.py     # Monte Carlo simulation steps
 │   ├── results_analysis.py
 │   └── interactions.py    # energy calculations
 └── start_simulation.py    # Main entry point

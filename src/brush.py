@@ -23,6 +23,8 @@ class Brush:
         # Initialize a List to store information about any pending moves
         self.pending_move = None
 
+        # Initialize an interaction constant for this Brush
+        self.c_int = 0
 
         """energy cache""" # Stores of energy to reduce compute time.
         # Initialize a 2d array to store the energy of the spring BELOW each particle
@@ -77,6 +79,7 @@ class Brush:
         # indexing :2 to set x,y coordinates only
         self.particle_positions[:, :, :2] = self.graft_positions[:, None, :]
 
+    def initialize_energies(self):
         # if config.SPRING_START_LENGTH > 0, all particles are at z > 0 at the start, no particles are interacting with the surface.
         # otherwise, if config.SPRING_START_LENGTH <= 0 all particles are either on or inside the surface, and are interacting with the surface.
         # therefore the config.SPRING_START_LENGTH can be used with the calc_surface_energy() function to determine the starting surface interaction energy of all particles.
@@ -91,6 +94,7 @@ class Brush:
             for ref_particle_idx in range(config.CHAIN_LEN):
                 # calculate and assign interaction energy for this particle
                 self.particle_energies[ref_chain_idx, ref_particle_idx] = interactions.calc_particle_interactions(
+                    self.c_int,
                     self.particle_positions,
                     self.particle_types,
                     ref_chain_idx,
@@ -158,7 +162,7 @@ class Brush:
         new_spring_above = 0 if is_last else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx + 1])
         new_spring_below = interactions.calc_spring_energy(new_pos, np.append(self.graft_positions[ref_chain_idx],0)) if is_first else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx - 1]) 
         new_surface = interactions.calc_surface_energy(new_pos[2])
-        new_interaction = interactions.calc_particle_interactions(self.particle_positions,self.particle_types,ref_chain_idx,ref_particle_idx, ref_particle_position=new_pos)
+        new_interaction = interactions.calc_particle_interactions(self.c_int, self.particle_positions,self.particle_types,ref_chain_idx,ref_particle_idx, ref_particle_position=new_pos)
         
         # calculate the total delta e
         delta_e = ((new_spring_above - old_spring_above) +  # where spring_above is 0 for last particle
