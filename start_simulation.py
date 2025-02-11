@@ -20,11 +20,7 @@ def run_single_configuration(config_number):
                     brush_copy.c_int = c_interation
                     brush_copy.set_type(is_block)
                     densities = run_monte_carlo(brush_copy, temperature)
-
                     #print(f"configuration:{config_number} nCint:{c_interation} temp:{temperature} is block:{is_block}")
-                    #print(f"configuration:{config_number} nCint:{c_interation} \ntemp:{temperature} \nis block:{is_block} \nDensities: {densities}")
-                    final_time = time.time() - start_time
-                    #print(f"Simulation time: {final_time}")
 
 def main():
     start_time = time.time()

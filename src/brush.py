@@ -2,7 +2,7 @@ import numpy as np
 from . import interactions
 from . import config
 
-#define class Brush, containing all information about the current state of the polymer brush
+# define class Brush, containing all information about the current state of the polymer brush
 class Brush: 
     def __init__(self):
         # use indexing to access the data for a given particle.
@@ -40,7 +40,9 @@ class Brush:
         #initialise a variable to store the total energy of the system
         self.total_energy = 0.0
 
-        
+    
+    # method to generate random positions on the 10x10 grafting surface, and vertical polymer chains.
+    # no return
     def initialize_positions(self):
         # to generate grafting coordinates:
         total_positions = config.BASE_LEN_X * config.BASE_LEN_Y
@@ -79,6 +81,10 @@ class Brush:
         # indexing :2 to set x,y coordinates only
         self.particle_positions[:, :, :2] = self.graft_positions[:, None, :]
 
+    
+    # method to calculate the initial energy state of the polymer brush.
+    # stores energy values in self.total_energy, self.spring_energies, self.surface_energies, self.particle_energies.
+    # no return
     def initialize_energies(self):
         # if config.SPRING_START_LENGTH > 0, all particles are at z > 0 at the start, no particles are interacting with the surface.
         # otherwise, if config.SPRING_START_LENGTH <= 0 all particles are either on or inside the surface, and are interacting with the surface.
@@ -105,7 +111,11 @@ class Brush:
         # calculate total energy      
         # IMPT: Sum of all particle energy must be divided by 2 to avoid double counting
         self.total_energy = np.sum(self.spring_energies) + np.sum(self.surface_energies) + (np.sum(self.particle_energies) / 2)
-        
+
+   
+    # method to set the brush type. chain or block 
+    # stores type information in self.particle_types[]
+    # no return    
     def set_type(self, is_block):
         # initialize a new numpy array with chain length to store the desired type pattern
         target_pattern = np.zeros(config.CHAIN_LEN)
@@ -132,9 +142,10 @@ class Brush:
         # set all particles to follow the  target type pattern
         self.particle_types[:] = target_pattern
     
+    
     # method to calculate state of brush after move, without altering the brush.
-    # returns: delta_e
-    # stores: move information waiting for accept_move() call.
+    # returns delta_e, for calculation of acceptance criteria.
+    # stores move information waiting for accept_move() call.
     def test_move(self, ref_chain_idx, ref_particle_idx, move_dir, move_magnitude):
         # retrive current reference particle position
         new_pos = self.particle_positions[ref_chain_idx, ref_particle_idx].copy()
@@ -144,7 +155,7 @@ class Brush:
 
         # initialise a bool to indicate if the reference particle is the last particle in the chain. (avoids checking again later)
         # if the reference particle index (0 indexed) is equal to the chain length - 1 (1 indexed) then the reference particle is the last particle in the chain.
-        # this prevents index out of bounds errors, and attempts to calculate energy against non-existant particles
+        # this prevents index out of bounds errors and also prevents attempts to calculate energy against non-existant particles
         is_last = (ref_particle_idx == config.CHAIN_LEN - 1)
 
         # initialise a bool to indicate if the reference particle is the first particle in the chain. (avoids checking again later)
@@ -160,6 +171,7 @@ class Brush:
 
         # calculate the new energies with the new particle position
         new_spring_above = 0 if is_last else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx + 1])
+        # np.append(self.graft_positions[ref_chain_idx],0) creates a temp numpy array of [x,y,z] using the grafting point position, to match the shape that calc_spring_energy() requires.
         new_spring_below = interactions.calc_spring_energy(new_pos, np.append(self.graft_positions[ref_chain_idx],0)) if is_first else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx - 1]) 
         new_surface = interactions.calc_surface_energy(new_pos[2])
         new_interaction = interactions.calc_particle_interactions(self.c_int, self.particle_positions,self.particle_types,ref_chain_idx,ref_particle_idx, ref_particle_position=new_pos)
@@ -170,11 +182,15 @@ class Brush:
             (new_surface - old_surface) + 
             (new_interaction - old_interaction))
 
-        # store the calculated energies, reference particle information,
+        # clear the previous pending move.
+        self.pending_move = None
+        # store the calculated energies, reference particle information
         self.pending_move = [is_last, ref_chain_idx, ref_particle_idx, new_spring_above, new_spring_below, new_surface, new_interaction, delta_e, new_pos]
 
         return delta_e
 
+
+    # method to update the chain with the move information.
     def accept_move(self):
         # update class energies and positions with information in self.pending_move
         # unpack pending move information
@@ -184,6 +200,7 @@ class Brush:
         self.particle_positions[ref_chain_idx, ref_particle_idx] = new_pos
 
         # Update cached energies for the moved particle
+        # Only update the energy for the spring above if the particle is not the last in the chain.
         if not is_last: self.spring_energies[ref_chain_idx, ref_particle_idx + 1] = new_spring_above
         self.spring_energies[ref_chain_idx, ref_particle_idx] = new_spring_below
         self.surface_energies[ref_chain_idx, ref_particle_idx] = new_surface
@@ -192,6 +209,5 @@ class Brush:
         # Update total system energy
         self.total_energy += delta_e
 
-        # Clear pending move
+        # Clear the stored pending move
         self.pending_move = None
-        #clear self.pending_move
