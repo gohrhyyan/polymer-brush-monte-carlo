@@ -2,14 +2,18 @@ import numpy as np
 from . import interactions
 from . import config
 
-#define class Brush, containing all information about the current state of the polymer brush
+#define class Brush, containing all information about the current state of the polymer brush, and methods to modify the state of the brush
 class Brush: 
+    
+    # method to initialize variables that store brush position and energy information.
+    # args: self
+    # no return value
+    # stores: empty arays/variables for state and energy information
     def __init__(self):
         # use indexing to access the data for a given particle.
-        
         """physical information""" 
         # Initialise 3d array to store particle positions for each chain.
-        # (chain number, particle in chain, 3 xyz coords) 
+        # (chain number, particle in chain, xyz coords) 
         self.particle_positions = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN, 3), dtype= config.PRECISION)
         
         # Initialize a 2d array to store graft positions for each chain
@@ -40,7 +44,10 @@ class Brush:
         #initialise a variable to store the total energy of the system
         self.total_energy = 0.0
 
-        
+    # method to generate random grafting points and vertical chain positions
+    # args: self
+    # no return value
+    # stores: postitional information of an initialized brush.
     def initialize_positions(self):
         # to generate grafting coordinates:
         total_positions = config.BASE_LEN_X * config.BASE_LEN_Y
@@ -79,6 +86,10 @@ class Brush:
         # indexing :2 to set x,y coordinates only
         self.particle_positions[:, :, :2] = self.graft_positions[:, None, :]
 
+    # method to calculate the initial energy of the brush (only works with initial position configuration.)
+    # args: self
+    # no return value
+    # stores: energy information of an initialized brush.
     def initialize_energies(self):
         # if config.SPRING_START_LENGTH > 0, all particles are at z > 0 at the start, no particles are interacting with the surface.
         # otherwise, if config.SPRING_START_LENGTH <= 0 all particles are either on or inside the surface, and are interacting with the surface.
@@ -105,7 +116,11 @@ class Brush:
         # calculate total energy      
         # IMPT: Sum of all particle energy must be divided by 2 to avoid double counting
         self.total_energy = np.sum(self.spring_energies) + np.sum(self.surface_energies) + (np.sum(self.particle_energies) / 2)
-        
+
+    # method to set the type of the polymer brush, block or alternating
+    # args: self, is_block boolean indicating if the chain is to be block or not.
+    # no return value
+    # stores: particle type information
     def set_type(self, is_block):
         # initialize a new numpy array with chain length to store the desired type pattern
         target_pattern = np.zeros(config.CHAIN_LEN)
@@ -133,6 +148,9 @@ class Brush:
         self.particle_types[:] = target_pattern
     
     # method to calculate state of brush after move, without altering the brush.
+    # args: self, 
+        # ref_chain_idx, ref_particle_idx chain and particle indexes of the particle to be moved and tested
+        # move_dir, move_magnitude direction of and magnitiude of the move to be tested
     # returns: delta_e
     # stores: move information waiting for accept_move() call.
     def test_move(self, ref_chain_idx, ref_particle_idx, move_dir, move_magnitude):
@@ -175,6 +193,10 @@ class Brush:
 
         return delta_e
 
+    # method to update the brush state to the recently checked move
+    # args: self
+    # no return value
+    # stores: new positional and energy information
     def accept_move(self):
         # update class energies and positions with information in self.pending_move
         # unpack pending move information

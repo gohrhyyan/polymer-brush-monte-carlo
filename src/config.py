@@ -1,4 +1,5 @@
 import numpy as np 
+
 # Simulation configuration
 BASE_LEN_X = 10
 BASE_LEN_Y = 10
@@ -6,10 +7,8 @@ NUM_CHAINS = 50
 CHAIN_LEN = 10
 SPRING_START_LENGTH = 1
 PRECISION = np.float64
-
 ITERATIONS_BETWEEN_SAVES = 1000
 TIMES_TO_SAVE = 100
-
 STARTING_CONFIGURATIONS = 10
 
 # Physical constants

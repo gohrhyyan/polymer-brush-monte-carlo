@@ -1,19 +1,31 @@
 import numpy as np
 from . import config
 
-# calculates spring energy between two points
+# function to calculate spring energy between two points
+# args: two arrays of co-ordinates [x,y,z]
+# returns: the calculated spring energy between the two points
 def calc_spring_energy(pos1, pos2):
+    # numpy implementation of the spring formula $E_{spring}(ij) = {1\over2} \,k\, d_{ij}^2$
     spring_energy = 0.5 * config.K_SPRING * (np.linalg.norm(pos1 - pos2))**2
     return spring_energy
 
-
-# calculates surface interaction energy
+# function to calculate surface interaction energy
+# args: z axis poisition value of the particle
+# returns: the surface interaction energy from the given z position
 def calc_surface_energy(z):
+    #implementation of $E_{surf}(i) = 10^9$
     surface_energy = config.SURFACE_INTERACTION_ENERGY if z <= 0 else 0.0
     return surface_energy
 
-
-# calculates the interaction energy between a reference particle and all other particles in the system 
+# function to calculate the interaction energy between a reference particle and all other particles in the system 
+# args: 
+    # c_int: interaction constant
+    # particle_positions: 3d Numpy array of particle position data: (chain number, particle in chain, xyz coords)
+    # particle_types: 2d array to store type (A/B) for each particle. A = 1, B = -1
+    # ref_chain_idx: chain and particle indexes of the selected analysis
+    # ref_particle_idx
+    # ref_particle_position
+# returns: the surface interaction energy from the given z position
 def calc_particle_interactions(c_int, particle_positions, particle_types, ref_chain_idx, ref_particle_idx, ref_particle_position):
 
     # Get the position and type of the reference particle from the arrays representing the entire brush.
