@@ -31,20 +31,19 @@ def calc_particle_interactions(c_int, particle_positions, particle_types, ref_ch
     # Get the position and type of the reference particle from the arrays representing the entire brush.
     ref_particle_type = particle_types[ref_chain_idx, ref_particle_idx]    
 
-    # initialize mask that exclcludes particles outside bounding box, all particles start as True, inside the bounding box
-    bounding_box_mask = np.ones_like(particle_types, dtype=bool)
-
+    # initialize mask that exclcludes the reference particle
     # exclude the reference particle, as it cannot interact with itself
-    bounding_box_mask[ref_chain_idx, ref_particle_idx] = False
+    ref_particle_mask = np.ones_like(particle_types, dtype=bool)
+    ref_particle_mask[ref_chain_idx, ref_particle_idx] = False
     
     # calculate exact spherical distances between reference particle and the remaining particles
-    distances = np.linalg.norm(particle_positions[bounding_box_mask] - ref_particle_position, axis=1)
+    distances = np.linalg.norm(particle_positions[ref_particle_mask] - ref_particle_position, axis=1)
     
     # mask out remaining particles outside interaction radius
     spherical_mask = distances < config.R_SIZE
     
     # calculate the interaction energy between each particle within the interaction sphere and the reference particle
-    interaction_energies = (ref_particle_type * particle_types[bounding_box_mask][spherical_mask]) * c_int * np.cos((np.pi/2) * (distances[spherical_mask]/config.R_SIZE))
+    interaction_energies = (ref_particle_type * particle_types[ref_particle_mask][spherical_mask]) * c_int * np.cos((np.pi/2) * (distances[spherical_mask]/config.R_SIZE))
     
     total_interaction = np.sum(interaction_energies, dtype= config.PRECISION)
     

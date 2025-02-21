@@ -147,6 +147,7 @@ class Brush:
         # set all particles to follow the  target type pattern
         self.particle_types[:] = target_pattern
     
+    
     # method to calculate state of brush after move, without altering the brush.
     # args: self, 
         # ref_chain_idx, ref_particle_idx chain and particle indexes of the particle to be moved and tested
@@ -162,7 +163,7 @@ class Brush:
 
         # initialise a bool to indicate if the reference particle is the last particle in the chain. (avoids checking again later)
         # if the reference particle index (0 indexed) is equal to the chain length - 1 (1 indexed) then the reference particle is the last particle in the chain.
-        # this prevents index out of bounds errors, and attempts to calculate energy against non-existant particles
+        # this prevents index out of bounds errors and also prevents attempts to calculate energy against non-existant particles
         is_last = (ref_particle_idx == config.CHAIN_LEN - 1)
 
         # initialise a bool to indicate if the reference particle is the first particle in the chain. (avoids checking again later)
@@ -178,6 +179,7 @@ class Brush:
 
         # calculate the new energies with the new particle position
         new_spring_above = 0 if is_last else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx + 1])
+        # np.append(self.graft_positions[ref_chain_idx],0) creates a temp numpy array of [x,y,z] using the grafting point position, to match the shape that calc_spring_energy() requires.
         new_spring_below = interactions.calc_spring_energy(new_pos, np.append(self.graft_positions[ref_chain_idx],0)) if is_first else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx - 1]) 
         new_surface = interactions.calc_surface_energy(new_pos[2])
         new_interaction = interactions.calc_particle_interactions(self.c_int, self.particle_positions,self.particle_types,ref_chain_idx,ref_particle_idx, ref_particle_position=new_pos)
@@ -188,7 +190,9 @@ class Brush:
             (new_surface - old_surface) + 
             (new_interaction - old_interaction))
 
-        # store the calculated energies, reference particle information,
+        # clear the previous pending move.
+        self.pending_move = None
+        # store the calculated energies, reference particle information
         self.pending_move = [is_last, ref_chain_idx, ref_particle_idx, new_spring_above, new_spring_below, new_surface, new_interaction, delta_e, new_pos]
 
         return delta_e
@@ -206,6 +210,7 @@ class Brush:
         self.particle_positions[ref_chain_idx, ref_particle_idx] = new_pos
 
         # Update cached energies for the moved particle
+        # Only update the energy for the spring above if the particle is not the last in the chain.
         if not is_last: self.spring_energies[ref_chain_idx, ref_particle_idx + 1] = new_spring_above
         self.spring_energies[ref_chain_idx, ref_particle_idx] = new_spring_below
         self.surface_energies[ref_chain_idx, ref_particle_idx] = new_surface
@@ -214,6 +219,5 @@ class Brush:
         # Update total system energy
         self.total_energy += delta_e
 
-        # Clear pending move
+        # Clear the stored pending move
         self.pending_move = None
-        #clear self.pending_move
