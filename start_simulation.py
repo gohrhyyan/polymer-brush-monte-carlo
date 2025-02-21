@@ -3,6 +3,8 @@ import time
 import copy
 import multiprocessing as mp
 
+
+#funtion to run a single configuration 
 def run_single_configuration(config_number):
         # Initialize a new instance of Brush class
         original_brush = brush.Brush()
@@ -11,7 +13,6 @@ def run_single_configuration(config_number):
         original_brush.initialize_positions()
 
         results = []
-
 
         for temperature in TEMPERATURES:
             for c_interation in C_INTERACTIONS:  

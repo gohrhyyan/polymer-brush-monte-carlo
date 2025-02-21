@@ -22,9 +22,8 @@ def calc_surface_energy(z):
     # c_int: interaction constant
     # particle_positions: 3d Numpy array of particle position data: (chain number, particle in chain, xyz coords)
     # particle_types: 2d array to store type (A/B) for each particle. A = 1, B = -1
-    # ref_chain_idx: chain and particle indexes of the selected analysis
-    # ref_particle_idx
-    # ref_particle_position
+    # ref_chain_idx, ref_particle_idx: chain and particle indexes of the reference particle
+    # ref_particle_position: [x,y,z] coordinates of the reference particle
 # returns: the surface interaction energy from the given z position
 def calc_particle_interactions(c_int, particle_positions, particle_types, ref_chain_idx, ref_particle_idx, ref_particle_position):
 

@@ -17,8 +17,8 @@ class Brush:
         self.particle_positions = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN, 3), dtype= config.PRECISION)
         
         # Initialize a 2d array to store graft positions for each chain
-        # (chain number, 2 xy coords)
-        self.graft_positions = np.zeros((config.NUM_CHAINS, 2), dtype= config.PRECISION)
+        # (chain number, xyz coords) where z is always 0
+        self.graft_positions = np.zeros((config.NUM_CHAINS, 3), dtype= config.PRECISION)
 
         # Initialize a 2d array to store type (A/B) for each particle
         # Type A will be equivilant to 1, type B will be equivilant to -1
@@ -60,31 +60,25 @@ class Brush:
         x_coords = random_flat_indices % config.BASE_LEN_X
         y_coords = random_flat_indices // config.BASE_LEN_X
 
-        #combine the x and y coordinates into a single 2d array and assign the grafting coordinates
-        self.graft_positions = np.column_stack((x_coords, y_coords))
+        # combine the x and y coordinates into a single 3d array and assign the grafting coordinates
+        # assign 0 to all z coordss
+        self.graft_positions = np.column_stack((x_coords, y_coords, np.zeros(config.NUM_CHAINS, dtype=config.PRECISION)))
 
         # assign grafting x,y positions to all particles.
-        # particle_positionsis a 3d array with shape [config.NUM_CHAINS, config.CHAIN_LEN, 3], and graft_positions is a 2d array with shape [config.NUM_CHAINS, 2]
+        # particle_positions is a 3d array with shape [config.NUM_CHAINS, config.CHAIN_LEN, 3], and graft_positions is a 3d array with shape [config.NUM_CHAINS, 3]
         # particles are indexed without the z-coordinate [:, :, :2] into shape [config.NUM_CHAINS, config.CHAIN_LEN, 2]
-        # graft pos is indexed with an additonal axis [:, None, :] into shape [config.NUM_CHAINS, 1, 2]
-        # numpy broadcasting copies the co-ordinate for each chain in graft_positions to all particles in particle_positions.
-        self.particle_positions[:, :, :2] = self.graft_positions[:, None, :] 
+        # graft pos is indexed with an additional dimension for the particles in the chain and limited to x,y coordinates [:, None, :2] into shape [config.NUM_CHAINS, 1, 2]
+        # numpy broadcasting copies the x,y coordinates for each chain in graft_positions to all particles in particle_positions.
+        self.particle_positions[:, :, :2] = self.graft_positions[:, None, :2] 
 
         # assign z-positions to all particles
         # start from config.SPRING_START_LENGTH because it is the minimum height off grafting surface, which is at z = 0
-        # np.arange(config.SPRING_START_LENGTH, config.CHAIN_LEN + 1) creates a 1d array starting from 1, ending at (CHAIN_LEN+1)*SPRING_START_LENGTH, with SPRING_START_LENGTH spacing
+        # np.arange(config.SPRING_START_LENGTH, config.CHAIN_LEN + 1) creates a 1d array starting from config.SPRING_START_LENGTH, ending at (CHAIN_LEN+1)*SPRING_START_LENGTH, with SPRING_START_LENGTH spacing
         # indexing self.particles[:, :, 2] referencess all z-axis values for all particles in all chains.
         # numpy broadcasting copies coordinates to all chains
         self.particle_positions[:, :, 2] = np.arange(config.SPRING_START_LENGTH, 
                                       (config.CHAIN_LEN + 1) * config.SPRING_START_LENGTH,
                                       config.SPRING_START_LENGTH, dtype= config.PRECISION)
-
-        # assign x and y positions.
-        # shape of graft_positions is (50 chains, 2 coordinates)
-        # adding None converts the array into (50,1,2) meaning [50 chains, 1 particle, 2 coordinates (x,y)]
-        # numpy broadcasting copies coordinates to all particles in each chain,
-        # indexing :2 to set x,y coordinates only
-        self.particle_positions[:, :, :2] = self.graft_positions[:, None, :]
 
     # method to calculate the initial energy of the brush (only works with initial position configuration.)
     # args: self
@@ -96,7 +90,7 @@ class Brush:
         # therefore the config.SPRING_START_LENGTH can be used with the calc_surface_energy() function to determine the starting surface interaction energy of all particles.
         self.surface_energies.fill(interactions.calc_surface_energy(config.SPRING_START_LENGTH),)
 
-        # therefore, all springs are the same length and have the same energy
+        # all springs start at the same length and have the same energy
         self.spring_energies.fill(interactions.calc_spring_energy(0, config.SPRING_START_LENGTH))
 
         # initialize particle interaction energy
@@ -179,8 +173,7 @@ class Brush:
 
         # calculate the new energies with the new particle position
         new_spring_above = 0 if is_last else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx + 1])
-        # np.append(self.graft_positions[ref_chain_idx],0) creates a temp numpy array of [x,y,z] using the grafting point position, to match the shape that calc_spring_energy() requires.
-        new_spring_below = interactions.calc_spring_energy(new_pos, np.append(self.graft_positions[ref_chain_idx],0)) if is_first else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx - 1]) 
+        new_spring_below = interactions.calc_spring_energy(new_pos, self.graft_positions[ref_chain_idx]) if is_first else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx - 1]) 
         new_surface = interactions.calc_surface_energy(new_pos[2])
         new_interaction = interactions.calc_particle_interactions(self.c_int, self.particle_positions,self.particle_types,ref_chain_idx,ref_particle_idx, ref_particle_position=new_pos)
         
@@ -192,9 +185,10 @@ class Brush:
 
         # clear the previous pending move.
         self.pending_move = None
-        # store the calculated energies, reference particle information
+        # store the calculated energies and reference particle information as a pending move
         self.pending_move = [is_last, ref_chain_idx, ref_particle_idx, new_spring_above, new_spring_below, new_surface, new_interaction, delta_e, new_pos]
 
+        # return the delta_e to the monte carlo simulation
         return delta_e
 
     # method to update the brush state to the recently checked move
