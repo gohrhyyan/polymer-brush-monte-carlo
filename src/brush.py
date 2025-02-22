@@ -45,15 +45,15 @@ class Brush:
         self.total_energy = 0.0
 
     # method to generate random grafting points and vertical chain positions
-    # args: self
+    # args: self, rng - numpy random number generator object.
     # no return value
     # stores: postitional information of an initialized brush.
-    def initialize_positions(self):
+    def initialize_positions(self, rng):
         # to generate grafting coordinates:
         total_positions = config.BASE_LEN_X * config.BASE_LEN_Y
 
         # generate a numpy array of length config.NUM_CHAINS with random numbers from 0 and total_positions -1
-        random_flat_indices = np.random.choice(total_positions, size=config.NUM_CHAINS, replace=False)
+        random_flat_indices = rng.choice(total_positions, size=config.NUM_CHAINS, replace=False)
 
         # convert the random array of numbers between 0 and total_positions into random x and y coordinates.
         # see: https://softwareengineering.stackexchange.com/questions/212808/treating-a-1d-data-structure-as-2d-grid

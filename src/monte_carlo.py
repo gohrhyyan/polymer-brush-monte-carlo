@@ -2,9 +2,11 @@ import numpy as np
 from . import config
 
 # function to put a brush through a single monte carlo simulation (i.e 10^5 iterations)
-# inputs: class brush that has been initialized, temperature for this run.
+# args: class brush that has been pre-initialized,
+        # temperature for this run.
+        # seeded random number generator
 # return: 1d array of densities calculated at every config.ITERATIONS_BETWEEN_SAVES iterations (i.e 1000 iterations)
-def run_monte_carlo(brush, temperature):
+def run_monte_carlo(brush, temperature, rng):
     # initialize array to store particle positions at save points
     # shape: (number of save_points, number of chains, number of particles per chain, xyz_coords)
     saved_positions = np.zeros((config.TIMES_TO_SAVE, 
@@ -16,18 +18,18 @@ def run_monte_carlo(brush, temperature):
     for save_number in range(config.TIMES_TO_SAVE):
         for iteration in range(config.ITERATIONS_BETWEEN_SAVES):
             # randomly select a chain and particle.
-            chain_idx = np.random.randint(0, config.NUM_CHAINS)
-            particle_idx = np.random.randint(0, config.CHAIN_LEN)
+            chain_idx = rng.integers(0, config.NUM_CHAINS)
+            particle_idx = rng.integers(0, config.CHAIN_LEN)
             
             # generate a random move direction and magnitude.
-            move_direction = np.random.randint(0, 3)  # x, y, or z
-            move_magnitude = np.random.uniform(-1, 1)
+            move_direction = rng.integers(0, 3)  # x, y, or z
+            move_magnitude = rng.uniform(-1, 1)
             
             # Calculate energy difference for proposed move
             delta_e = brush.test_move(chain_idx, particle_idx, move_direction, move_magnitude)
             
             # calculate the acceptance criteria
-            if np.random.random() < np.exp(-delta_e / temperature):
+            if rng.random() < np.exp(-delta_e / temperature):
                 brush.accept_move()
     
         # save the current particle positions for density calculation later
