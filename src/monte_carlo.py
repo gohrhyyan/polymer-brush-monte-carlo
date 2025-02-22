@@ -8,11 +8,15 @@ from . import config
 # return: 1d array of densities calculated at every config.ITERATIONS_BETWEEN_SAVES iterations (i.e 1000 iterations)
 def run_monte_carlo(brush, temperature, rng):
     # initialize array to store particle positions at save points
+    # config.TIMES_TO_SAVE + 1, to include the original state of the brush
     # shape: (number of save_points, number of chains, number of particles per chain, xyz_coords)
-    saved_positions = np.zeros((config.TIMES_TO_SAVE, 
+    saved_positions = np.zeros((config.TIMES_TO_SAVE + 1, 
                               config.NUM_CHAINS,
                               config.CHAIN_LEN,
                               3), dtype=config.PRECISION)
+    
+    # Save the initial particle positions
+    saved_positions[0] = brush.particle_positions
     
     # monte carlo simulation runs for 1000 steps on the inner loop, escapes to the outer loop to save current positions in saved_positions, then goes back into the inner loop.
     for save_number in range(config.TIMES_TO_SAVE):
@@ -33,7 +37,7 @@ def run_monte_carlo(brush, temperature, rng):
                 brush.accept_move()
     
         # save the current particle positions for density calculation later
-        saved_positions[save_number] = brush.particle_positions
+        saved_positions[save_number + 1] = brush.particle_positions
     
     # Calculate the volume for density calculation
     volume = config.BASE_LEN_Y * config.BASE_LEN_X * config.DENSITY_CALC_Z_BOUNDARY
