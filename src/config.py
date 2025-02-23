@@ -18,3 +18,8 @@ TEMPERATURES = [0.5,1,2]
 R_SIZE = 1 
 SURFACE_INTERACTION_ENERGY = 1e9
 DENSITY_CALC_Z_BOUNDARY = 2
+
+# Output
+RESULTS_FOLDERNAME = 'results' 
+CSV_FILENAME = f'{RESULTS_FOLDERNAME}/simulation_results.csv'
+GRAPH_TITLE = 'Surface Density against Steps'

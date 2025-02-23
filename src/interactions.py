@@ -24,26 +24,29 @@ def calc_surface_energy(z):
     # particle_types: 2d array to store type (A/B) for each particle. A = 1, B = -1
     # ref_chain_idx, ref_particle_idx: chain and particle indexes of the reference particle
     # ref_particle_position: [x,y,z] coordinates of the reference particle
-# returns: the surface interaction energy from the given z position
+# returns: 2D array of shape (NUM_CHAINS, CHAIN_LEN) containing energy contributions from each particle to the reference particle
 def calc_particle_interactions(c_int, particle_positions, particle_types, ref_chain_idx, ref_particle_idx, ref_particle_position):
 
-    # Get the position and type of the reference particle from the arrays representing the entire brush.
+    # Get the type (A=1 or B=-1) of the reference particle.
     ref_particle_type = particle_types[ref_chain_idx, ref_particle_idx]    
 
-    # initialize mask that exclcludes the reference particle
-    # exclude the reference particle, as it cannot interact with itself
-    ref_particle_mask = np.ones_like(particle_types, dtype=bool)
-    ref_particle_mask[ref_chain_idx, ref_particle_idx] = False
+    # Initialize array to store energy contributions for each particle
+    # Same shape as particle_types: (NUM_CHAINS, CHAIN_LEN)
+    energy_contributions = np.zeros_like(particle_types, dtype=config.PRECISION)
     
     # calculate exact spherical distances between reference particle and the remaining particles
-    distances = np.linalg.norm(particle_positions[ref_particle_mask] - ref_particle_position, axis=1)
+    # particle_positions shape: (NUM_CHAINS, CHAIN_LEN, 3) where 3 is (x,y,z)
+    # axis=2 tells np.linalg.norm to calculate along the xyz coordinates,
+    # distances shape: (NUM_CHAINS, CHAIN_LEN)
+    distances = np.linalg.norm(particle_positions - ref_particle_position, axis=2)
     
     # mask out remaining particles outside interaction radius
     spherical_mask = distances < config.R_SIZE
     
     # calculate the interaction energy between each particle within the interaction sphere and the reference particle
-    interaction_energies = (ref_particle_type * particle_types[ref_particle_mask][spherical_mask]) * c_int * np.cos((np.pi/2) * (distances[spherical_mask]/config.R_SIZE))
+    energy_contributions[spherical_mask] = (ref_particle_type * particle_types[spherical_mask]) * c_int * np.cos((np.pi/2) * (distances[spherical_mask]/config.R_SIZE))
+
+    # Zero out self-interaction
+    energy_contributions[ref_chain_idx, ref_particle_idx] = 0
     
-    total_interaction = np.sum(interaction_energies, dtype= config.PRECISION)
-    
-    return total_interaction
+    return energy_contributions

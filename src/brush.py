@@ -30,13 +30,20 @@ class Brush:
         # Initialize an interaction constant for this Brush
         self.c_int = 0
 
-        """energy cache""" # Stores of energy to reduce compute time.
+        """energy cache""" 
+        # Stores of energy to reduce compute time.
         # Initialize a 2d array to store the energy of the spring BELOW each particle
         # (chain number, particle in chain) 
         self.spring_energies = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN), dtype= config.PRECISION)
 
-        # Initialize a 2d array to store the energy of each particle's interaction with every other particle.
-        self.particle_energies = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN), dtype= config.PRECISION)
+        # Initialize a 4d array to store the energy contribution that each particle contributes to each other particle
+        # i.e airwise interaction energies
+        # Shape: (chain1, particle1, chain2, particle2)
+        # interaction_cache[i,j,k,l] represents energy contribution between 
+        # particle j in chain i and particle l in chain k
+        self.interaction_cache = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN, 
+                                         config.NUM_CHAINS, config.CHAIN_LEN), 
+                                         dtype=config.PRECISION)
 
         # Initialize a 2d array to store the energy of each particle's interaction with the surface.
         self.surface_energies = np.zeros((config.NUM_CHAINS, config.CHAIN_LEN), dtype= config.PRECISION)
@@ -88,17 +95,17 @@ class Brush:
         # if config.SPRING_START_LENGTH > 0, all particles are at z > 0 at the start, no particles are interacting with the surface.
         # otherwise, if config.SPRING_START_LENGTH <= 0 all particles are either on or inside the surface, and are interacting with the surface.
         # therefore the config.SPRING_START_LENGTH can be used with the calc_surface_energy() function to determine the starting surface interaction energy of all particles.
-        self.surface_energies.fill(interactions.calc_surface_energy(config.SPRING_START_LENGTH),)
+        self.surface_energies.fill(interactions.calc_surface_energy(config.SPRING_START_LENGTH))
 
         # all springs start at the same length and have the same energy
-        self.spring_energies.fill(interactions.calc_spring_energy(0, config.SPRING_START_LENGTH))
+        self.spring_energies.fill(interactions.calc_spring_energy([0,0,0], [0,0,config.SPRING_START_LENGTH]))
 
-        # initialize particle interaction energy
+        # initialize pairwise interaction cache
         # calcuate for all particles in all chains
         for ref_chain_idx in range(config.NUM_CHAINS):
             for ref_particle_idx in range(config.CHAIN_LEN):
-                # calculate and assign interaction energy for this particle
-                self.particle_energies[ref_chain_idx, ref_particle_idx] = interactions.calc_particle_interactions(
+                # calculate interactions for this particle
+                self.interaction_cache[ref_chain_idx, ref_particle_idx] = interactions.calc_particle_interactions(
                     self.c_int,
                     self.particle_positions,
                     self.particle_types,
@@ -109,7 +116,7 @@ class Brush:
 
         # calculate total energy      
         # IMPT: Sum of all particle energy must be divided by 2 to avoid double counting
-        self.total_energy = np.sum(self.spring_energies) + np.sum(self.surface_energies) + (np.sum(self.particle_energies) / 2)
+        self.total_energy = np.sum(self.spring_energies) + np.sum(self.surface_energies) + (np.sum(self.interaction_cache) / 2)
 
     # method to set the type of the polymer brush, block or alternating
     # args: self, is_block boolean indicating if the chain is to be block or not.
@@ -135,6 +142,7 @@ class Brush:
             # use numpy tile to generate a repeating pattern of 1, -1 = A, B
             # repeat pattern for -(config.CHAIN_LEN // -2) repetitions
                 # i.e add 1 more repetition if config.CHAIN_LEN is odd
+                #using upside down floor division. see: https://stackoverflow.com/questions/14822184/is-there-a-ceiling-equivalent-of-operator-in-python
             # trim pattern to the same length as config.CHAIN_LEN
             target_pattern = np.tile([1, -1], -(config.CHAIN_LEN // -2))[:config.CHAIN_LEN]
         
@@ -169,24 +177,22 @@ class Brush:
         old_spring_above = 0 if is_last else self.spring_energies[ref_chain_idx, ref_particle_idx + 1]
         old_spring_below = self.spring_energies[ref_chain_idx,ref_particle_idx]
         old_surface = self.surface_energies[ref_chain_idx,ref_particle_idx]
-        old_interaction = self.particle_energies[ref_chain_idx,ref_particle_idx]
+        old_interaction_contributions = self.interaction_cache[ref_chain_idx, ref_particle_idx]
 
         # calculate the new energies with the new particle position
         new_spring_above = 0 if is_last else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx + 1])
         new_spring_below = interactions.calc_spring_energy(new_pos, self.graft_positions[ref_chain_idx]) if is_first else interactions.calc_spring_energy(new_pos, self.particle_positions[ref_chain_idx, ref_particle_idx - 1]) 
         new_surface = interactions.calc_surface_energy(new_pos[2])
-        new_interaction = interactions.calc_particle_interactions(self.c_int, self.particle_positions,self.particle_types,ref_chain_idx,ref_particle_idx, ref_particle_position=new_pos)
+        new_interaction_contributions = interactions.calc_particle_interactions(self.c_int, self.particle_positions,self.particle_types,ref_chain_idx,ref_particle_idx, ref_particle_position=new_pos)
         
         # calculate the total delta e
         delta_e = ((new_spring_above - old_spring_above) +  # where spring_above is 0 for last particle
             (new_spring_below - old_spring_below) + 
             (new_surface - old_surface) + 
-            (new_interaction - old_interaction))
+            (np.sum(new_interaction_contributions) - np.sum(old_interaction_contributions)))
 
-        # clear the previous pending move.
-        self.pending_move = None
         # store the calculated energies and reference particle information as a pending move
-        self.pending_move = [is_last, ref_chain_idx, ref_particle_idx, new_spring_above, new_spring_below, new_surface, new_interaction, delta_e, new_pos]
+        self.pending_move = [is_last, ref_chain_idx, ref_particle_idx, new_spring_above, new_spring_below, new_surface, new_interaction_contributions, delta_e, new_pos]
 
         # return the delta_e to the monte carlo simulation
         return delta_e
@@ -198,7 +204,7 @@ class Brush:
     def accept_move(self):
         # update class energies and positions with information in self.pending_move
         # unpack pending move information
-        is_last, ref_chain_idx, ref_particle_idx, new_spring_above, new_spring_below, new_surface, new_interaction, delta_e, new_pos = self.pending_move
+        is_last, ref_chain_idx, ref_particle_idx, new_spring_above, new_spring_below, new_surface, new_interaction_contributions, delta_e, new_pos = self.pending_move
         
         # Update particle position
         self.particle_positions[ref_chain_idx, ref_particle_idx] = new_pos
@@ -208,7 +214,22 @@ class Brush:
         if not is_last: self.spring_energies[ref_chain_idx, ref_particle_idx + 1] = new_spring_above
         self.spring_energies[ref_chain_idx, ref_particle_idx] = new_spring_below
         self.surface_energies[ref_chain_idx, ref_particle_idx] = new_surface
-        self.particle_energies[ref_chain_idx, ref_particle_idx] = new_interaction
+        
+        # Update interaction cache
+        # Update both directions of the symmetrical interaction
+        # new_interaction_contributions shape: (NUM_CHAINS, CHAIN_LEN) - energy contributions between moved particle and all other particles
+
+        # Update outgoing interactions: how much energy the moved particle contributes to all other particles
+        # interaction_cache[ref_chain_idx, ref_particle_idx] indexes a 2D slice (NUM_CHAINS, CHAIN_LEN) 
+        # representing contributions FROM the moved particle TO all other particles
+        self.interaction_cache[ref_chain_idx, ref_particle_idx] = new_interaction_contributions
+
+        # Update incoming interactions: how much energy all other particles contribute to the moved particle
+        # 1. First indexes [:, :] select all chains and particles for the first two dimensions
+        # 2. Then fixes the last two dimensions to ref_chain_idx, ref_particle_idx
+        # interaction_cache[:, :, ref_chain_idx, ref_particle_idx] also indexes a 2D slice (NUM_CHAINS, CHAIN_LEN)
+        # but represents contributions TO the moved particle FROM all other particles
+        self.interaction_cache[:, :, ref_chain_idx, ref_particle_idx] = new_interaction_contributions
 
         # Update total system energy
         self.total_energy += delta_e
