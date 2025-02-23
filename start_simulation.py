@@ -3,6 +3,8 @@ import time
 import copy
 import multiprocessing as mp
 
+# get the half the total number of saves made, for calculating equilibrium density.
+half_saves = int(TIMES_TO_SAVE/2)
 
 # funtion to run monte-carlo simulations for a new starting configuration, for each temperature, c_int, and polymer type.
 # args: config_index (just a unique identifier integer)
@@ -20,7 +22,7 @@ def run_single_configuration(config_index):
     original_brush.initialize_positions(rng)
 
     results = []
-
+    
     for temperature in TEMPERATURES:
         for c_int in C_INTERACTIONS:
             # Run the Monte Carlo for both types of Brush, block and alternating
@@ -37,11 +39,17 @@ def run_single_configuration(config_index):
 
                 # Run the monte carlo simulation and get the densities
                 densities = run_monte_carlo(brush_copy, temperature, rng)
+
+                # Calculate equilibrium statistics using last 50,000 steps (50 save points)
+                equilibrium_density = np.mean(densities[-half_saves:])
+                equilibrium_variance = np.var(densities[-half_saves:])
                 
                 results.append({"c_int" : c_int,
                     "temperature" : temperature,
                     "is_block" : is_block,
-                    "densities" : densities})
+                    "densities" : densities,
+                    "equilibrium_density": equilibrium_density,
+                    "equilibrium_variance" : equilibrium_variance})
                 
                 # Print that the simulation is complete
                 print(f"Configuration:{config_index} Interaction Constant:{c_int} Temperature:{temperature} Is block:{is_block}")
@@ -73,10 +81,11 @@ def main():
         for configuration_results in pool.map(run_single_configuration, range(STARTING_CONFIGURATIONS)):
                 all_results.append(configuration_results)
     
+    
+    plot_and_save_data(all_results)
     # Calculate total runtime
     total_runtime = time.time() - start_time
     print(f"All Monte Carlo simulations complete. \nTotal simulation runtime: {total_runtime}s")
-    plot_graphs(all_results)
 
 if __name__ == "__main__":
     # Enable multiprocessing support for windows
