@@ -217,20 +217,29 @@ class Brush:
         self.spring_energies[ref_chain_idx, ref_particle_idx] = new_spring_below
         self.surface_energies[ref_chain_idx, ref_particle_idx] = new_surface
         
-        # Update interaction cache
-        # Update both directions of the symmetrical interaction
-        # new_interaction_contributions shape: (NUM_CHAINS, CHAIN_LEN) - energy contributions between moved particle and all other particles
+        # Update interaction cache in both directions of the symmetrical interaction
+        # interaction_cache is a 4D array with shape: (NUM_CHAINS, CHAIN_LEN, NUM_CHAINS, CHAIN_LEN)
+        # where interaction_cache[i,j,k,l] represents energy contribution between:
+        #   - particle j in chain i (source particle)
+        #   - particle l in chain k (target particle)
 
-        # Update outgoing interactions: how much energy the moved particle contributes to all other particles
-        # interaction_cache[ref_chain_idx, ref_particle_idx] indexes a 2D slice (NUM_CHAINS, CHAIN_LEN) 
-        # representing contributions FROM the moved particle TO all other particles
+        # new_interaction_contributions is a 2D array with shape: (NUM_CHAINS, CHAIN_LEN) containing energy contributions between the moved particle and all other particles
+        # We don't only need to update the moved particle's 2d slice, but also the 2d slice of all other particles that have interactions with the moved particle.
+        # Each particle has their own 2d slice in the interaction_chache that represents the energy they have with all other particles.
+
+        # Update outgoing interactions: 
+        # To update how much energy the moved particle contributes to all other particles:
+        # - Slice the 4D interaction_cache by fixing first two dimensions to [ref_chain_idx, ref_particle_idx] indexing the moved particle's 2d slice
+        # - This Slice represents the interaction energy that the moved particle has with all other particles.
+        # - This gives a 2D slice with shape (NUM_CHAINS, CHAIN_LEN) representing energy FROM moved particle TO all others
         self.interaction_cache[ref_chain_idx, ref_particle_idx] = new_interaction_contributions
 
-        # Update incoming interactions: how much energy all other particles contribute to the moved particle
-        # 1. First indexes [:, :] select all chains and particles for the first two dimensions
-        # 2. Then fixes the last two dimensions to ref_chain_idx, ref_particle_idx
-        # interaction_cache[:, :, ref_chain_idx, ref_particle_idx] also indexes a 2D slice (NUM_CHAINS, CHAIN_LEN)
-        # but represents contributions TO the moved particle FROM all other particles
+        
+        # Update incoming interactions: 
+        # To update how much energy other particles contribute to the moved particle:
+        # - Slice the 4D interaction_cache by fixing last two dimensions to [ref_chain_idx, ref_particle_idx] indexing the moved particle in all other particles' 2d slices
+        # - Select all values for first two dimensions using [:, :]
+        # - This gives a 2D slice with shape (NUM_CHAINS, CHAIN_LEN) representing energy TO moved particle FROM all others
         self.interaction_cache[:, :, ref_chain_idx, ref_particle_idx] = new_interaction_contributions
 
         # Update total system energy
