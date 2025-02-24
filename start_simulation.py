@@ -7,7 +7,7 @@ import multiprocessing as mp
 half_saves = int(TIMES_TO_SAVE/2)
 
 # funtion to run monte-carlo simulations for a new starting configuration, for each temperature, c_int, and polymer type.
-# args: config_index (just a unique identifier integer)
+# args: config_index (just a unique identifier integer for one of the 10 generated starting configurations)
 # returns: dictionary of results for all configurations.
 def run_single_configuration(config_index):
         
@@ -15,7 +15,7 @@ def run_single_configuration(config_index):
     original_brush = brush.Brush()
 
     # initialize a new random number generator for this configuration, using the config_index as the seed.
-    # fixes: all results being the same due to time based-rng having the same values for all initial configurations.
+    # fixes: all results being the same due to time based-rng having the same values for parallel processes.
     rng = np.random.default_rng(config_index)
 
     # Generate new Starting positions
@@ -23,9 +23,11 @@ def run_single_configuration(config_index):
 
     results = []
     
+    # Loop through all possible parameter combinations
+    # Run the Monte Carlo for each temperature and interaction constant
     for temperature in TEMPERATURES:
         for c_int in C_INTERACTIONS:
-            # Run the Monte Carlo for both types of Brush, block and alternating
+            # Run the Monte Carlo for both types of Brush: block and alternating
             for is_block in [True, False]:
 
                 # Create a deep copy of the original brush to preserve the initial state
@@ -36,6 +38,9 @@ def run_single_configuration(config_index):
 
                 # Set the type of polymer, block or alternating for this simulation
                 brush_copy.set_type(is_block)
+
+                # Initialize the energies for this brush.
+                brush_copy.initialize_energies()
 
                 # Run the monte carlo simulation and get the densities
                 densities = run_monte_carlo(brush_copy, temperature, rng)
@@ -113,9 +118,7 @@ def main():
         # ]
         for configuration_results in pool.map(run_single_configuration, range(STARTING_CONFIGURATIONS)):
                 all_results.append(configuration_results)
-                
-    
-        
+                       
     # Calculate total runtime
     total_runtime = time.time() - start_time
     print(f"All Monte Carlo simulations complete. \nTotal simulation runtime: {total_runtime}s")
