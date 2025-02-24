@@ -39,15 +39,12 @@ def run_monte_carlo(brush, temperature, rng):
         # save the current particle positions for density calculation later
         saved_positions[save_number + 1] = brush.particle_positions
     
-    # Calculate the volume for density calculation
-    volume = config.BASE_LEN_Y * config.BASE_LEN_X * config.DENSITY_CALC_Z_BOUNDARY
-
     # Flag z-coordinates that are below than or equal to the z_boundary
     mask = saved_positions[..., 2] <= config.DENSITY_CALC_Z_BOUNDARY
 
     # Sum over all chains and particles for each save point
     # densities is a 1d array of the calculated near-surface density at each save point. config.length = TIMES_TO_SAVE
-    densities = np.sum(mask, axis=(1, 2)) / volume
+    densities = np.sum(mask, axis=(1, 2)) / config.DENSITY_VOLUME
 
     return densities
 

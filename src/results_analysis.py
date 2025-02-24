@@ -11,7 +11,7 @@ from . import config
 # stores: the plot to the filename specified
 # return: none
 def save_plot(filename, graph_title):
-    # Add labels and title with parameter information
+    # Add axis labels and title
     plt.xlabel('Number of Steps', fontsize=12)
     plt.ylabel('Density (particles/volume)', fontsize=12)
     plt.title(graph_title, fontsize=14)
