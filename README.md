@@ -1,4 +1,4 @@
-# ic-python-groupproj
+# Solution to the 2024-2025 ICL Material Science and Engineering Y1 Computing Challenge, graded 95.8%
 Project structure:
 ```
 polymer_simulation/
